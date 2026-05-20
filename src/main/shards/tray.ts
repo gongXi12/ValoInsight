@@ -1,6 +1,7 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
 import { join } from 'path'
 import { BaseShard } from './base'
+import { existsSync } from 'fs'
 import { ValorantClientShard } from './valorant-client'
 import { WindowManagerShard } from './window-manager'
 
@@ -34,8 +35,12 @@ export class TrayShard extends BaseShard {
   }
 
   private createTray(): void {
-    // Create a simple icon (you'll want to replace with a proper icon)
-    const icon = nativeImage.createEmpty()
+    const iconPath = app.isPackaged
+      ? join(process.resourcesPath, 'resources/icon.png')
+      : join(__dirname, '../../resources/icon.png')
+    const icon = existsSync(iconPath)
+      ? nativeImage.createFromPath(iconPath)
+      : nativeImage.createEmpty()
 
     this.tray = new Tray(icon)
     this.tray.setToolTip('ValoInsight - Disconnected')

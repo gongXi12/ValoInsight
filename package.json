@@ -9,7 +9,9 @@
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.main.json",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.renderer.json",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web"
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder"
   },
   "keywords": [
     "valorant",
@@ -26,6 +28,7 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "electron": "^28.0.0",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "typescript": "^6.0.3",
     "vite": "^7.3.3",

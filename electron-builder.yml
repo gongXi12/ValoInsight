@@ -1,0 +1,27 @@
+appId: com.valoinsight.app
+productName: ValoInsight
+directories:
+  output: dist
+files:
+  - out/**/*
+  - resources/**/*
+  - "!electron-bin/**"
+  - "!src/**"
+  - "!*.ts"
+  - "!*.map"
+extraResources:
+  - from: resources/icon.ico
+    to: resources/icon.ico
+  - from: resources/icon.png
+    to: resources/icon.png
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+asar: true
