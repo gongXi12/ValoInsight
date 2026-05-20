@@ -59,6 +59,7 @@ export class WindowManagerShard extends BaseShard {
       frame: false,
       transparent: true,
       resizable: true,
+      icon: join(__dirname, '../../resources/icon.ico'),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         sandbox: false,
