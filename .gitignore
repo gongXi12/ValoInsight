@@ -7,5 +7,4 @@ Thumbs.db
 *.tsbuildinfo
 .env
 .env.local
-*.exe
 *.res
