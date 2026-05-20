@@ -8,3 +8,19 @@ Thumbs.db
 .env
 .env.local
 *.res
+
+# Electron runtime files (copied from dist for direct launch)
+*.dll
+*.pak
+*.bin
+*.dat
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!electron-builder.yml
+locales/
+resources/
+LICENSE.electron.txt
+LICENSES.chromium.html
+ValoInsight.exe
