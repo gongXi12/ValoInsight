@@ -77,6 +77,7 @@ const region = ref('auto')
           </div>
           <select v-model="region" class="select-input">
             <option value="auto">自动检测</option>
+            <option value="cn">中国服 (CN)</option>
             <option value="ap">亚太 (AP)</option>
             <option value="kr">韩国 (KR)</option>
             <option value="na">北美 (NA)</option>
