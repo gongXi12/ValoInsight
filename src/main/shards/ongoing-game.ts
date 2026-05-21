@@ -1,9 +1,10 @@
 import { EventEmitter } from 'events'
+import axios from 'axios'
 import { BaseShard } from './base'
 import { ValorantClientShard } from './valorant-client'
 import { PartyDetectorShard } from './party-detector'
 import { HenrikApiShard } from './henrik-api'
-import { PLAYER_CACHE_SIZE, TIER_NAMES } from '@shared/constants'
+import { PLAYER_CACHE_SIZE, TIER_NAMES, API_TIMEOUT } from '@shared/constants'
 import type {
   GameFlowPhase,
   PregamePlayer,
@@ -59,6 +60,8 @@ export class OngoingGameShard extends BaseShard {
   private partyDetector: PartyDetectorShard
   private henrikApi: HenrikApiShard
   private currentMatchId: string | null = null
+  private region: string = 'ap'
+  private cachedToken: { token: string; accessToken: string } | null = null
 
   readonly events = new EventEmitter()
 
@@ -81,6 +84,12 @@ export class OngoingGameShard extends BaseShard {
 
   async onDispose(): Promise<void> {
     this.currentMatchId = null
+  }
+
+  /** Set the region for API calls. Resolves 'auto' to 'ap'. */
+  setRegion(region: string): void {
+    this.region = region === 'auto' ? 'ap' : region
+    this.cachedToken = null
   }
 
   private async handleGameFlowPhase(phase: GameFlowPhase): Promise<void> {
@@ -161,6 +170,80 @@ export class OngoingGameShard extends BaseShard {
     }
   }
 
+  /** Get entitlement token from local client, with caching */
+  private async getEntitlementToken(): Promise<{ token: string; accessToken: string } | null> {
+    if (this.cachedToken) return this.cachedToken
+    const token = await this.valorantClient.getEntitlementToken()
+    if (token) this.cachedToken = token
+    return token
+  }
+
+  /** Fetch match history directly from Riot's backend API */
+  private async fetchRiotMatchHistory(
+    puuid: string
+  ): Promise<{ wins: number; losses: number; kills: number; deaths: number; assists: number } | null> {
+    try {
+      const token = await this.getEntitlementToken()
+      if (!token) return null
+
+      const region = this.region
+      const url = `https://pd.${region}.a.pvp.net/match-history/v1/users/${puuid}?startIndex=0&endIndex=25`
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`,
+          'X-Riot-Entitlements-JWT': token.token,
+          'Content-Type': 'application/json',
+        },
+        timeout: API_TIMEOUT,
+      })
+
+      const history = response.data
+      if (!history?.History) return null
+
+      const recent = history.History.slice(0, 5)
+      let wins = 0
+      let losses = 0
+      let kills = 0
+      let deaths = 0
+      let assists = 0
+
+      for (const match of recent) {
+        // Fetch match details for stats
+        try {
+          const detailUrl = `https://pd.${region}.a.pvp.net/match-details/v1/matches/${match.MatchID}`
+          const detailRes = await axios.get(detailUrl, {
+            headers: {
+              Authorization: `Bearer ${token.accessToken}`,
+              'X-Riot-Entitlements-JWT': token.token,
+            },
+            timeout: API_TIMEOUT,
+          })
+          const detail = detailRes.data
+          const playerData = detail?.players?.find((p: { Subject: string }) => p.Subject === puuid)
+          if (playerData?.stats) {
+            kills += playerData.stats.kills || 0
+            deaths += playerData.stats.deaths || 0
+            assists += playerData.stats.assists || 0
+            const playerTeam = playerData.teamId
+            const teamResult = detail?.teams?.find((t: { teamId: string }) => t.teamId === playerTeam)
+            if (teamResult?.won) {
+              wins++
+            } else {
+              losses++
+            }
+          }
+        } catch {
+          // Individual match fetch failed, skip
+        }
+      }
+
+      return { wins, losses, kills, deaths, assists }
+    } catch {
+      return null
+    }
+  }
+
   /** Enrich a list of players with MMR and match history data */
   private async enrichPlayers(
     players: PregamePlayer[],
@@ -195,38 +278,12 @@ export class OngoingGameShard extends BaseShard {
       // MMR fetch failed, continue without it
     }
 
-    // Fetch recent match stats from HenrikDev
+    // Fetch recent match stats via Riot API (works for all regions including CN)
     let recentMatches: EnrichedPlayer['recentMatches'] = null
     try {
-      const matchHistory = await this.henrikApi.getMatchHistory('ap', player.Subject)
-      if (matchHistory?.data) {
-        const recent = matchHistory.data.slice(0, 5)
-        let wins = 0
-        let losses = 0
-        let kills = 0
-        let deaths = 0
-        let assists = 0
-
-        for (const match of recent) {
-          const playerData = match.players.all_players.find(
-            (p) => p.puuid === player.Subject
-          )
-          if (playerData) {
-            kills += playerData.stats.kills
-            deaths += playerData.stats.deaths
-            assists += playerData.stats.assists
-            if (match.teams[playerData.team.toLowerCase() as 'red' | 'blue']?.has_won) {
-              wins++
-            } else {
-              losses++
-            }
-          }
-        }
-
-        recentMatches = { wins, losses, kills, deaths, assists }
-      }
+      recentMatches = await this.fetchRiotMatchHistory(player.Subject)
     } catch {
-      // HenrikDev fetch failed, continue without it
+      // Match history fetch failed, continue without it
     }
 
     return {

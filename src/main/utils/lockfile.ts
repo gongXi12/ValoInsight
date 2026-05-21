@@ -6,8 +6,9 @@ import type { LockfileData } from '@shared/types/valorant'
 const LOCKFILE_PATHS = [
   // Riot Client lockfile (most common)
   join(process.env.LOCALAPPDATA || '', 'Riot Games', 'Riot Client', 'Config', 'lockfile'),
+  // Riot Client CN (国服)
+  join(process.env.LOCALAPPDATA || '', 'Riot Games', 'Riot Client CN', 'Config', 'lockfile'),
   // Valorant-specific lockfile
-  'C:\\Riot Games\\VALORANT\\live\\lockfile',
   'C:\\Riot Games\\VALORANT\\live\\lockfile',
   // Common install paths
   'D:\\Riot Games\\VALORANT\\live\\lockfile',

@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useValorantStore } from '../stores/valorant'
+
+const store = useValorantStore()
 
 const autoConnect = ref(true)
 const showOverlay = ref(true)
 const startWithWindows = ref(false)
 const useHenrikApi = ref(true)
-const region = ref('auto')
+
+onMounted(() => {
+  store.initRegion()
+})
+
+watch(() => store.region, (value) => {
+  window.api.setRegion(value)
+})
 </script>
 
 <template>
@@ -75,7 +85,7 @@ const region = ref('auto')
             <span class="setting-name">服务器区域</span>
             <span class="setting-desc">选择你的 Valorant 服务器区域</span>
           </div>
-          <select v-model="region" class="select-input">
+          <select v-model="store.region" class="select-input">
             <option value="auto">自动检测</option>
             <option value="cn">中国服 (CN)</option>
             <option value="ap">亚太 (AP)</option>

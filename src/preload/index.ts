@@ -12,6 +12,10 @@ const api = {
   getConnectionState: () => ipcRenderer.invoke('valorant:get-connection-state'),
   getGameFlowPhase: () => ipcRenderer.invoke('valorant:get-gameflow-phase'),
 
+  // Settings
+  getRegion: () => ipcRenderer.invoke('settings:get-region'),
+  setRegion: (region: string) => ipcRenderer.invoke('settings:set-region', region),
+
   // Event listeners
   onStateChange: (callback: (state: string) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: string) => callback(state)

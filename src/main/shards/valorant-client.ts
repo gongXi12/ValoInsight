@@ -190,4 +190,17 @@ export class ValorantClientShard extends BaseShard {
     const response = await this.httpClient.post<T>(path, data)
     return response.data
   }
+
+  /** Get entitlements token and access token from the local client */
+  async getEntitlementToken(): Promise<{ token: string; accessToken: string } | null> {
+    try {
+      const data = await this.get<{ token: string; accessToken: string }>('/entitlements/v1/token')
+      if (data?.token && data?.accessToken) {
+        return { token: data.token, accessToken: data.accessToken }
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
 }

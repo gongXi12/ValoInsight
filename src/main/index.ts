@@ -7,6 +7,8 @@ import { WindowManagerShard } from './shards/window-manager'
 import { TrayShard } from './shards/tray'
 import type { ConnectionState, GameFlowPhase } from '@shared/types'
 
+let currentRegion = 'auto'
+
 // Initialize shards
 const valorantClient = new ValorantClientShard()
 const partyDetector = new PartyDetectorShard()
@@ -49,6 +51,16 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('valorant:get-gameflow-phase', () => {
     return valorantClient.gameFlowPhase
+  })
+
+  // Region settings IPC
+  ipcMain.handle('settings:get-region', () => {
+    return currentRegion
+  })
+
+  ipcMain.handle('settings:set-region', (_event, region: string) => {
+    currentRegion = region
+    ongoingGame.setRegion(region)
   })
 
   // Window control IPC handlers
